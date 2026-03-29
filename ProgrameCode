@@ -1,0 +1,323 @@
+#include <iostream>
+#include <string>
+#include <limits>
+using namespace std;
+
+// ===== БАЗОВЫЙ КЛАСС =====
+class Membership {
+protected:
+    string name;     // ФИО клиента
+    double price;    // базовая цена
+    int visits;      // оставшиеся посещения
+
+public:
+    Membership(string n, double p, int v) {
+        name = n;
+        price = p;
+        visits = v;
+    }
+
+    virtual ~Membership() {}
+
+    // геттеры
+    string getName() { return name; }
+    int getVisits() { return visits; }
+
+    // списание одного посещения
+    void useVisit() {
+        if (visits > 0) {
+            visits--;
+            cout << "Посещение списано\n";
+        }
+        else {
+            cout << "Нет посещений\n";
+        }
+    }
+
+    // виртуальные методы
+    virtual double calcMonthlyCost() = 0;
+    virtual string getScheduleInfo() = 0;
+
+    // вывод общей информации
+    virtual void print() {
+        cout << "ФИО: " << name << endl;
+        cout << "Цена: " << price << endl;
+        cout << "Осталось: " << visits << endl;
+    }
+};
+
+// ===== ГРУППОВОЙ АБОНЕМЕНТ =====
+class Group : public Membership {
+    string activity, trainer;
+
+public:
+    Group(string n, double p, int v, string a, string t)
+        : Membership(n, p, v) {
+        activity = a;
+        trainer = t;
+    }
+
+    double calcMonthlyCost() override {
+        return price + 1000;
+    }
+
+    string getScheduleInfo() override {
+        return activity + " (" + trainer + ")";
+    }
+
+    void print() override {
+        Membership::print();
+        cout << "Тип: Групповой\n";
+        cout << "Занятие: " << activity << endl;
+        cout << "Тренер: " << trainer << endl;
+    }
+};
+
+// ===== ПЕРСОНАЛЬНЫЙ АБОНЕМЕНТ =====
+class Personal : public Membership {
+    string trainer;
+    int perWeek;
+
+public:
+    Personal(string n, double p, int v, string t, int w)
+        : Membership(n, p, v) {
+        trainer = t;
+        perWeek = w;
+    }
+
+    double calcMonthlyCost() override {
+        return price + perWeek * 500;
+    }
+
+    string getScheduleInfo() override {
+        return "Тренер: " + trainer + ", тренировок в неделю: " + to_string(perWeek);
+    }
+
+    void print() override {
+        Membership::print();
+        cout << "Тип: Персональный\n";
+        cout << "Тренер: " << trainer << endl;
+        cout << "Тренировок в неделю: " << perWeek << endl;
+    }
+};
+
+// ===== MAIN =====
+int main() {
+    setlocale(0, "");
+
+    const int MAX = 100;
+    Membership* arr[MAX]; // массив абонементов
+    int count = 0;        // текущее количество
+    int c;                // выбор пользователя
+
+    do {
+        // главное меню
+        cout << "\n1 Добавить\n2 Показать\n3 Стоимость\n4 Расписание\n5 Списать\n6 Поиск\n7 Статистика\n8 Удалить\n0 Выход\n";
+        cout << "Ваш выбор: ";
+        cin >> c;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+        // ===== ДОБАВЛЕНИЕ =====
+        if (c == 1) {
+            if (count >= MAX) {
+                cout << "Массив заполнен\n";
+                continue;
+            }
+
+            int t;
+            string name;
+            double price;
+            int visits;
+
+            cout << "1 Групповой 2 Персональный: ";
+            cin >> t;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            cout << "ФИО: ";
+            getline(cin, name);
+
+            cout << "Цена: ";
+            cin >> price;
+
+            cout << "Посещения: ";
+            cin >> visits;
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+            if (t == 1) {
+                string act, tr;
+                cout << "Занятие: ";
+                getline(cin, act);
+                cout << "Тренер: ";
+                getline(cin, tr);
+
+                arr[count++] = new Group(name, price, visits, act, tr);
+                cout << "Групповой абонемент добавлен\n";
+            }
+            else if (t == 2) {
+                string tr;
+                int w;
+                cout << "Тренер: ";
+                getline(cin, tr);
+                cout << "Тренировок в неделю: ";
+                cin >> w;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                arr[count++] = new Personal(name, price, visits, tr, w);
+                cout << "Персональный абонемент добавлен\n";
+            }
+            else {
+                cout << "Неверный тип абонемента\n";
+            }
+        }
+
+        // ===== ВЫВОД ВСЕХ =====
+        else if (c == 2) {
+            if (count == 0) {
+                cout << "Абонементов нет\n";
+            }
+            else {
+                for (int i = 0; i < count; i++) {
+                    cout << "\n[" << i + 1 << "]\n";
+                    arr[i]->print();
+                    cout << "Стоимость за месяц: " << arr[i]->calcMonthlyCost() << endl;
+                }
+            }
+        }
+
+        // ===== РАСЧЁТ СТОИМОСТИ =====
+        else if (c == 3) {
+            if (count == 0) {
+                cout << "Абонементов нет\n";
+            }
+            else {
+                int i;
+                cout << "Номер: ";
+                cin >> i;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                if (i > 0 && i <= count)
+                    cout << "Стоимость за месяц: " << arr[i - 1]->calcMonthlyCost() << endl;
+                else
+                    cout << "Неверный номер\n";
+            }
+        }
+
+        // ===== РАСПИСАНИЕ =====
+        else if (c == 4) {
+            if (count == 0) {
+                cout << "Абонементов нет\n";
+            }
+            else {
+                for (int i = 0; i < count; i++) {
+                    cout << arr[i]->getName() << ": "
+                        << arr[i]->getScheduleInfo() << endl;
+                }
+            }
+        }
+
+        // ===== СПИСАНИЕ ПОСЕЩЕНИЯ =====
+        else if (c == 5) {
+            if (count == 0) {
+                cout << "Абонементов нет\n";
+            }
+            else {
+                int i;
+                cout << "Номер: ";
+                cin >> i;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                if (i > 0 && i <= count)
+                    arr[i - 1]->useVisit();
+                else
+                    cout << "Неверный номер\n";
+            }
+        }
+
+        // ===== ПОИСК =====
+        else if (c == 6) {
+            if (count == 0) {
+                cout << "Абонементов нет\n";
+            }
+            else {
+                string s;
+                bool found = false;
+
+                cout << "ФИО: ";
+                getline(cin, s);
+
+                for (int i = 0; i < count; i++) {
+                    if (arr[i]->getName() == s) {
+                        arr[i]->print();
+                        cout << "Стоимость за месяц: " << arr[i]->calcMonthlyCost() << endl;
+                        found = true;
+                    }
+                }
+
+                if (!found)
+                    cout << "Абонемент не найден\n";
+            }
+        }
+
+        // ===== СТАТИСТИКА =====
+        else if (c == 7) {
+            if (count == 0) {
+                cout << "Абонементов нет\n";
+            }
+            else {
+                int g = 0, p = 0, sumV = 0;
+                double money = 0;
+
+                for (int i = 0; i < count; i++) {
+                    money += arr[i]->calcMonthlyCost();
+                    sumV += arr[i]->getVisits();
+
+                    if (dynamic_cast<Group*>(arr[i]) != nullptr) g++;
+                    else if (dynamic_cast<Personal*>(arr[i]) != nullptr) p++;
+                }
+
+                cout << "Всего: " << count << endl;
+                cout << "Групп: " << g << " Персон: " << p << endl;
+                cout << "Выручка: " << money << endl;
+                cout << "Средние посещения: " << (double)sumV / count << endl;
+            }
+        }
+
+        // ===== УДАЛЕНИЕ =====
+        else if (c == 8) {
+            if (count == 0) {
+                cout << "Абонементов нет\n";
+            }
+            else {
+                int i;
+                cout << "Удалить номер: ";
+                cin >> i;
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                if (i > 0 && i <= count) {
+                    delete arr[i - 1];
+
+                    // сдвиг массива
+                    for (int j = i - 1; j < count - 1; j++)
+                        arr[j] = arr[j + 1];
+
+                    count--;
+                    cout << "Абонемент удален\n";
+                }
+                else {
+                    cout << "Неверный номер\n";
+                }
+            }
+        }
+
+        else if (c != 0) {
+            cout << "Неверный пункт меню\n";
+        }
+
+    } while (c != 0);
+
+    // очистка памяти
+    for (int i = 0; i < count; i++)
+        delete arr[i];
+
+    return 0;
+}
